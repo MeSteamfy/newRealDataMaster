@@ -135,6 +135,7 @@ curl -X 'POST' \
 Pour savoir la note du tp, il faut lancer la commande suivante:
 
 ```bash
+poetry add tabulate # pour les tests
 poetry run python test_auc.py
 ```
 
