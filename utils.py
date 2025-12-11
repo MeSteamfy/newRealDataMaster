@@ -2,6 +2,7 @@
 # utils.py - Fonctions et Classes pour l'Atelier d'Apprentissage Supervisé
 # ====================================================================
 
+from fastapi import params
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -219,47 +220,77 @@ def importance_des_variables(Xtrain, Ytrain, nom_cols):
     return sorted_idx, features
 
 def selection_nombre_optimal_variables(Xtrain, Xtest, Ytrain, Ytest, sorted_idx, meilleur_algo_name, meilleur_algo_params):
-    """Détermine le nombre optimal de variables à conserver (Q5)."""
-    print(f"\n🔄 Détermination du nombre optimal de variables (avec {meilleur_algo_name})...")
-
-    # Initialiser le meilleur modèle (MLP ou autre)
-    if meilleur_algo_name == 'MLP':
-        best_clf = MLPClassifier(random_state=1, max_iter=1000, **meilleur_algo_params)
-    elif meilleur_algo_name.startswith('Random Forest'):
-        best_clf = RandomForestClassifier(random_state=1, n_estimators=200, n_jobs=-1, **meilleur_algo_params)
+    """
+    Sélectionne le nombre optimal de variables (Q5 - Partie 2).
+    """
+    print("\n🔍 Sélection du nombre optimal de variables (K)...")
+    print(f"   Modèle utilisé: {meilleur_algo_name}")
+    
+    # Liste des valeurs de K à tester
+    k_values = [3, 5, 8, 10, 13, 16]
+    accuracies = []
+    
+    # Préparer les paramètres sans duplication
+    if meilleur_algo_params:
+        params = meilleur_algo_params.copy()
+        # Supprimer les paramètres qui seront définis explicitement
+        params.pop('max_iter', None)
+        params.pop('random_state', None)
     else:
-        best_clf = DecisionTreeClassifier(random_state=1)
+        params = {}
     
-    scores = np.zeros(Xtrain.shape[1])
+    # Tester différentes valeurs de K
+    for k in k_values:
+        if k > len(sorted_idx):
+            k = len(sorted_idx)
+        
+        # Sélectionner les K meilleures variables
+        selected_features = sorted_idx[:k]
+        Xtrain_k = Xtrain[:, selected_features]
+        Xtest_k = Xtest[:, selected_features]
+        
+        # Créer le modèle selon le type
+        if meilleur_algo_name == 'MLP' or 'MLP' in meilleur_algo_name:
+            clf = MLPClassifier(random_state=1, max_iter=1000, **params)
+        elif meilleur_algo_name.startswith('Random Forest'):
+            clf = RandomForestClassifier(random_state=1, n_estimators=200, n_jobs=-1)
+        elif 'CART' in meilleur_algo_name or 'DecisionTree' in meilleur_algo_name:
+            clf = DecisionTreeClassifier(random_state=1)
+        elif 'KNN' in meilleur_algo_name:
+            clf = KNeighborsClassifier(n_neighbors=params.get('n_neighbors', 5))
+        else:
+            # Par défaut, utiliser MLP
+            clf = MLPClassifier(random_state=1, max_iter=1000, **params)
+        
+        # Entraîner et évaluer
+        clf.fit(Xtrain_k, Ytrain)
+        y_pred = clf.predict(Xtest_k)
+        acc = accuracy_score(Ytest, y_pred)
+        accuracies.append(acc)
+        
+        print(f"   K = {k:2d} variables → Accuracy = {acc:.4f}")
     
-    for f in np.arange(0, Xtrain.shape[1]):
-        X1_f = Xtrain[:, sorted_idx[:f+1]]
-        X2_f = Xtest[:, sorted_idx[:f+1]] 
-        
-        # Réinitialiser/recréer le classifieur à chaque itération
-        clf_iteration = best_clf.__class__(**best_clf.get_params())
-        clf_iteration.fit(X1_f, Ytrain)
-        
-        Y_pred = clf_iteration.predict(X2_f)
-        scores[f] = np.round(accuracy_score(Ytest, Y_pred), 4)
-        
-    optimal_features_count = np.argmax(scores) + 1
-    max_accuracy = scores[optimal_features_count - 1]
+    # Trouver le K optimal
+    best_k_idx = np.argmax(accuracies)
+    optimal_k = k_values[best_k_idx]
     
-    print(f"Meilleure Accuracy: {max_accuracy:.4f} (avec {optimal_features_count} variables)")
-
+    # Afficher le graphique
     plt.figure(figsize=(10, 6))
-    plt.plot(np.arange(1, Xtrain.shape[1] + 1), scores, marker='o', linestyle='-', color='blue')
-    plt.plot(optimal_features_count, max_accuracy, 'ro', markersize=8, label=f'Optimal: {optimal_features_count} vars ({max_accuracy:.4f})')
-    plt.xlabel("Nombre de Variables")
-    plt.ylabel("Accuracy")
-    plt.title(f"Évolution de l'Accuracy en fonction des variables ({meilleur_algo_name})")
-    plt.xticks(np.arange(1, Xtrain.shape[1] + 1))
+    plt.plot(k_values, accuracies, marker='o', linewidth=2, markersize=8, color='#2E86AB')
+    plt.xlabel('Nombre de variables (K)', fontsize=12)
+    plt.ylabel('Accuracy sur le jeu de test', fontsize=12)
+    plt.title(f'Sélection du Nombre Optimal de Variables\n(Modèle: {meilleur_algo_name})', 
+              fontsize=14, fontweight='bold')
     plt.grid(True, alpha=0.3)
-    plt.legend()
+    plt.axvline(optimal_k, color='red', linestyle='--', linewidth=2, 
+                label=f'K optimal = {optimal_k}')
+    plt.legend(fontsize=11)
+    plt.tight_layout()
     plt.show()
     
-    return optimal_features_count
+    print(f"\n✅ Nombre optimal de variables: K = {optimal_k} (Accuracy = {accuracies[best_k_idx]:.4f})")
+    
+    return optimal_k
 
 def score_acc_prec(Y_true, Y_pred, **kwargs):
     """Critère pour GridSearchCV: (accuracy + precision pondérée) / 2."""
@@ -423,37 +454,105 @@ def pipeline_generation_cv(df, X_data, Y_data, best_cv_clf_name, best_cv_clf_par
 # ====================================================================
 
 def traitement_donnees_numeriques(df, col_num):
-    """Prépare et nettoie les données numériques (II.1)."""
-    print("\n" + "#"*80)
-    print("PARTIE II - QUESTION 1: DONNÉES NUMÉRIQUES SEULES")
-    print("#"*80)
+    """
+    Traite les données numériques avec valeurs manquantes (Partie II - Q1).
     
-    # Conversion en numpy array pour l'indexation
-    data = df.values 
-    X_full = data[:, :-1] 
-    Y_full = data[:, -1]
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        DataFrame contenant les données
+    col_num : np.array
+        Indices des colonnes numériques
+        
+    Returns:
+    --------
+    X_train, X_test, Y_train, Y_test : arrays
+        Données train/test séparées
+    """
+    print("\n🔧 Traitement des données numériques (Partie II.1)...")
     
-    # Extraire les colonnes numériques, remplacer '?' par NaN, et typer en float
-    X_num = np.copy(X_full[:, col_num])
-    # Assurez-vous que les '?' sont remplacés par np.nan
-    X_num[X_num == '?'] = np.nan
-    X_num = X_num.astype(float)
+    # ⚠️ IMPORTANT: Vérifier si df est un DataFrame ou déjà un array
+    if isinstance(df, pd.DataFrame):
+        print(f"   Input: DataFrame avec {df.shape[1]} colonnes")
+        # Cas 1: DataFrame valide
+        if df.shape[1] > 1:
+            # Séparer X et Y depuis le DataFrame
+            X_full = df.iloc[:, :-1].values  # Toutes les colonnes sauf la dernière
+            Y_full = df.iloc[:, -1].values   # Dernière colonne
+        else:
+            print(f"❌ ERREUR: DataFrame n'a qu'une seule colonne!")
+            print(f"   Colonnes: {list(df.columns)}")
+            raise ValueError(f"DataFrame invalide avec {df.shape[1]} colonne(s).")
+    else:
+        # Cas 2: Déjà un numpy array
+        print(f"   Input: Numpy array avec shape {df.shape}")
+        if df.shape[1] > 1:
+            X_full = df[:, :-1]
+            Y_full = df[:, -1]
+        else:
+            raise ValueError(f"Array invalide avec {df.shape[1]} colonne(s).")
     
-    # Supprimer les individus contenant des nan (basé sur df temporaire pour utiliser la fonction any)
-    df_temp = pd.DataFrame(X_num)
-    mask = df_temp.isnull().any(axis=1) # Masque des lignes contenant des NaN
-    X_cleaned = X_num[~mask]
-    Y_cleaned = Y_full[~mask]
+    print(f"   Dimensions de X_full: {X_full.shape}")
+    print(f"   Dimensions de Y_full: {Y_full.shape}")
     
-    Y_bin = Y_cleaned.astype(int) 
-
-    print(f"Taille après nettoyage: {X_cleaned.shape[0]} individus ({X_cleaned.shape[1]} variables)")
+    # Vérifier que col_num est valide
+    if len(col_num) == 0:
+        print("⚠️ Aucune colonne numérique spécifiée. Utilisation des 6 premières.")
+        col_num = np.arange(min(6, X_full.shape[1]))
     
-    X_train_num, X_test_num, Y_train_num, Y_test_num = train_test_split(
-        X_cleaned, Y_bin, test_size=0.5, random_state=1
+    # Filtrer les indices invalides
+    max_col_idx = X_full.shape[1] - 1
+    col_num_valid = np.array([idx for idx in col_num if 0 <= idx <= max_col_idx])
+    
+    if len(col_num_valid) == 0:
+        raise ValueError(f"Aucune colonne numérique valide. X_full a {X_full.shape[1]} colonnes, col_num={col_num}")
+    
+    print(f"   Colonnes numériques sélectionnées: {col_num_valid}")
+    
+    # Extraire les colonnes numériques
+    X_num = X_full[:, col_num_valid].copy()
+    
+    # Gérer les valeurs manquantes ('?' ou NaN)
+    if X_num.dtype == object or X_num.dtype.kind in ['U', 'S']:  # String types
+        print("   Conversion des chaînes en float...")
+        X_num_converted = np.zeros(X_num.shape, dtype=float)
+        for i in range(X_num.shape[0]):
+            for j in range(X_num.shape[1]):
+                try:
+                    val = X_num[i, j]
+                    if val == '?' or val is None or val == '':
+                        X_num_converted[i, j] = np.nan
+                    else:
+                        X_num_converted[i, j] = float(val)
+                except (ValueError, TypeError):
+                    X_num_converted[i, j] = np.nan
+        X_num = X_num_converted
+    
+    # Convertir en float si ce n'est pas déjà fait
+    if X_num.dtype != float:
+        try:
+            X_num = X_num.astype(float)
+        except (ValueError, TypeError) as e:
+            print(f"⚠️ Erreur de conversion: {e}")
+            print(f"   Premiers éléments: {X_num[0, :min(3, X_num.shape[1])]}")
+    
+    # Imputer les valeurs manquantes
+    from sklearn.impute import SimpleImputer
+    imputer = SimpleImputer(strategy='mean')
+    X_num_imputed = imputer.fit_transform(X_num)
+    
+    nb_missing = np.sum(np.isnan(X_num))
+    print(f"   ✅ {nb_missing} valeurs manquantes imputées par la moyenne")
+    print(f"   Dimensions finales: {X_num_imputed.shape}")
+    
+    # Séparer Train/Test (50/50)
+    X_train, X_test, Y_train, Y_test = train_test_split(
+        X_num_imputed, Y_full, test_size=0.5, random_state=1
     )
     
-    return X_train_num, X_test_num, Y_train_num, Y_test_num
+    print(f"   ✅ Séparation Train/Test: {X_train.shape[0]} / {X_test.shape[0]}")
+    
+    return X_train, X_test, Y_train, Y_test
 
 def traitement_donnees_heterogenes_imputation(X_full, Y_full, col_num, col_cat):
     """Traite les données hétérogènes avec imputation (II.2)."""
@@ -495,3 +594,135 @@ def traitement_donnees_heterogenes_imputation(X_full, Y_full, col_num, col_cat):
     print(f"Dimensions finales (Entraînement): {X_train_final.shape}")
     
     return X_train_final, X_test_final, Y_train_comb, Y_test_comb
+
+# ====================================================================
+# VI. FONCTION SHAP POUR L'EXPLICABILITÉ (Q5 - Partie 3)
+# ====================================================================
+
+def explicabilite_shap(model, X_train, X_test, feature_names):
+    """
+    Utilise SHAP pour l'explicabilité du modèle (Q5 - Partie 3).
+    
+    Parameters:
+    -----------
+    model : sklearn model
+        Modèle entraîné (CART, KNN, MLP, etc.)
+    X_train : np.array
+        Données d'entraînement (pour le background dataset)
+    X_test : np.array
+        Données de test (pour calculer les valeurs SHAP)
+    feature_names : list
+        Liste des noms des variables
+        
+    Returns:
+    --------
+    shap_values : array
+        Valeurs SHAP calculées
+    """
+    try:
+        import shap
+    except ImportError:
+        print("❌ La bibliothèque SHAP n'est pas installée.")
+        print("   Installez-la avec: pip install shap ou poetry add shap")
+        return None
+    
+    import sys
+    
+    print("\n🔍 Analyse SHAP pour l'explicabilité du modèle...")
+    print(f"   Modèle: {type(model).__name__}")
+    print(f"   Nombre de variables: {len(feature_names)}")
+    print(f"   Taille de X_test: {X_test.shape}")
+    
+    # --- 1. Créer l'explainer SHAP adapté au type de modèle ---
+    try:
+        if hasattr(model, 'tree_') or 'DecisionTree' in str(type(model)):
+            # Pour les arbres de décision
+            print("   Utilisation de TreeExplainer...")
+            explainer = shap.TreeExplainer(model)
+            shap_values = explainer.shap_values(X_test)
+            
+        elif 'RandomForest' in str(type(model)) or 'XGB' in str(type(model)):
+            # Pour les modèles ensemblistes basés sur des arbres
+            print("   Utilisation de TreeExplainer pour modèle ensembliste...")
+            explainer = shap.TreeExplainer(model)
+            shap_values = explainer.shap_values(X_test)
+            
+        else:
+            # Pour les autres modèles (KNN, MLP, etc.) - utiliser KernelExplainer
+            print("   Utilisation de KernelExplainer (peut être lent)...")
+            # Échantillonner 100 individus pour accélérer
+            background = shap.sample(X_train, min(100, len(X_train)))
+            
+            # Wrapper pour gérer predict_proba
+            def model_predict(data):
+                preds = model.predict_proba(data)
+                # Retourner seulement les probabilités de la classe positive
+                return preds[:, 1] if preds.ndim > 1 else preds
+            
+            explainer = shap.KernelExplainer(model_predict, background)
+            
+            # Limiter à 50 individus pour KernelExplainer
+            X_test_sample = X_test[:min(50, len(X_test))]
+            shap_values = explainer.shap_values(X_test_sample)
+            X_test = X_test_sample  # Mettre à jour pour la cohérence
+            print(f"   (Calcul SHAP limité à {len(X_test)} observations)")
+    
+    except Exception as e:
+        print(f"⚠️ Erreur lors de la création de l'explainer: {e}")
+        print("   Utilisation de KernelExplainer par défaut...")
+        background = shap.sample(X_train, min(50, len(X_train)))
+        
+        def model_predict(data):
+            return model.predict(data)
+        
+        explainer = shap.KernelExplainer(model_predict, background)
+        X_test = X_test[:min(30, len(X_test))]
+        shap_values = explainer.shap_values(X_test)
+    
+    # Si shap_values est une liste (classification binaire), prendre la classe positive
+    if isinstance(shap_values, list) and len(shap_values) > 1:
+        print("   Classification binaire détectée, extraction de la classe positive...")
+        shap_values = shap_values[1]
+    
+    print(f"   ✅ Valeurs SHAP calculées pour {X_test.shape[0]} observations")
+    
+    # --- 2. Graphique 1: Summary Plot (Importance Globale) ---
+    print("\n📊 Génération du Summary Plot (Importance Globale)...")
+    try:
+        plt.figure(figsize=(10, 6))
+        shap.summary_plot(shap_values, X_test, feature_names=feature_names, show=False)
+        plt.title("SHAP Summary Plot - Impact des Variables", fontsize=14, fontweight='bold')
+        plt.tight_layout()
+        plt.show()
+    except Exception as e:
+        print(f"⚠️ Erreur Summary Plot: {e}")
+    
+    # --- 3. Graphique 2: Bar Plot (Importance Moyenne) ---
+    print("📊 Génération du Bar Plot (Importance Moyenne)...")
+    try:
+        plt.figure(figsize=(10, 6))
+        shap.summary_plot(shap_values, X_test, feature_names=feature_names, 
+                         plot_type="bar", show=False)
+        plt.title("SHAP Bar Plot - Importance Moyenne des Variables", fontsize=14, fontweight='bold')
+        plt.tight_layout()
+        plt.show()
+    except Exception as e:
+        print(f"⚠️ Erreur Bar Plot: {e}")
+    
+    # --- 4. Afficher les variables les plus importantes ---
+    mean_abs_shap = np.abs(shap_values).mean(axis=0)
+    sorted_features_idx = np.argsort(mean_abs_shap)[::-1]
+    
+    print("\n📌 Top 5 des variables les plus influentes (selon SHAP):")
+    for i in range(min(5, len(feature_names))):
+        idx = sorted_features_idx[i]
+        print(f"   {i+1}. {feature_names[idx]:<25} |SHAP| moyen = {mean_abs_shap[idx]:.4f}")
+    
+    print("\n✅ Analyse SHAP terminée avec succès!")
+    print("   Interprétation:")
+    print("   - Summary Plot: montre comment chaque variable influence les prédictions")
+    print("   - Bar Plot: classe les variables par ordre d'importance moyenne")
+    print("   - Valeurs positives (rouge): augmentent la probabilité de crédit approuvé")
+    print("   - Valeurs négatives (bleu): diminuent la probabilité de crédit approuvé")
+    
+    return shap_values
