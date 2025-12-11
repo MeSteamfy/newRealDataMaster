@@ -12,14 +12,33 @@ Ce projet implémente un pipeline complet de Machine Learning pour le scoring de
 - **Poetry** (Gestionnaire de dépendances)
 
 Si Poetry n'est pas installé sur votre machine :
+
+```bash
+# Windows : 
+(Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
+$Env:Path += ";$Env:APPDATA\Python\Scripts"
+poetry --version
+
+# Mac
+curl -sSL https://install.python-poetry.org | python3 -
+export PATH="$HOME/.local/bin:$PATH"
+source ~/.zshrc
+poetry --version
+
+# Linux
+curl -sSL https://install.python-poetry.org | python3 -
+export PATH="$HOME/.local/bin:$PATH"
+poetry --version
+
+```
+
 ```bash
 curl -sSL [https://install.python-poetry.org](https://install.python-poetry.org) | python3 -
 
 ## Clonez le dépôt et accédez au dossier :
 
-```bash
-git clone <votre-url-repo>
-cd <nom-du-dossier>
+git clone git@github.com:MeSteamfy/newRealDataMaster.git
+cd newRealDataMaster
 ```
 
 ## Installez l'environnement virtuel et les dépendances :
