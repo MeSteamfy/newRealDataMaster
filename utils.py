@@ -218,39 +218,42 @@ def importance_des_variables(Xtrain, Ytrain, nom_cols):
 
     return sorted_idx, features
 
-def selection_nombre_optimal_variables(Xtrain, Xtest, Ytrain, Ytest, sorted_idx, meilleur_algo_name, meilleur_algo_params):
+
+def selection_nombre_optimal_variables(Xtrain, Xtest, Ytrain, Ytest, sorted_idx, meilleur_algo_name,
+                                       meilleur_algo_params):
     """Détermine le nombre optimal de variables à conserver (Q5)."""
     print(f"\n🔄 Détermination du nombre optimal de variables (avec {meilleur_algo_name})...")
 
     # Initialiser le meilleur modèle (MLP ou autre)
     if meilleur_algo_name == 'MLP':
-        best_clf = MLPClassifier(random_state=1, max_iter=1000, **meilleur_algo_params)
+        best_clf = MLPClassifier(**meilleur_algo_params)
     elif meilleur_algo_name.startswith('Random Forest'):
-        best_clf = RandomForestClassifier(random_state=1, n_estimators=200, n_jobs=-1, **meilleur_algo_params)
+        best_clf = RandomForestClassifier(n_jobs=-1, **meilleur_algo_params)
     else:
         best_clf = DecisionTreeClassifier(random_state=1)
-    
+
     scores = np.zeros(Xtrain.shape[1])
-    
+
     for f in np.arange(0, Xtrain.shape[1]):
-        X1_f = Xtrain[:, sorted_idx[:f+1]]
-        X2_f = Xtest[:, sorted_idx[:f+1]] 
-        
+        X1_f = Xtrain[:, sorted_idx[:f + 1]]
+        X2_f = Xtest[:, sorted_idx[:f + 1]]
+
         # Réinitialiser/recréer le classifieur à chaque itération
         clf_iteration = best_clf.__class__(**best_clf.get_params())
         clf_iteration.fit(X1_f, Ytrain)
-        
+
         Y_pred = clf_iteration.predict(X2_f)
         scores[f] = np.round(accuracy_score(Ytest, Y_pred), 4)
-        
+
     optimal_features_count = np.argmax(scores) + 1
     max_accuracy = scores[optimal_features_count - 1]
-    
+
     print(f"Meilleure Accuracy: {max_accuracy:.4f} (avec {optimal_features_count} variables)")
 
     plt.figure(figsize=(10, 6))
     plt.plot(np.arange(1, Xtrain.shape[1] + 1), scores, marker='o', linestyle='-', color='blue')
-    plt.plot(optimal_features_count, max_accuracy, 'ro', markersize=8, label=f'Optimal: {optimal_features_count} vars ({max_accuracy:.4f})')
+    plt.plot(optimal_features_count, max_accuracy, 'ro', markersize=8,
+             label=f'Optimal: {optimal_features_count} vars ({max_accuracy:.4f})')
     plt.xlabel("Nombre de Variables")
     plt.ylabel("Accuracy")
     plt.title(f"Évolution de l'Accuracy en fonction des variables ({meilleur_algo_name})")
@@ -258,7 +261,7 @@ def selection_nombre_optimal_variables(Xtrain, Xtest, Ytrain, Ytest, sorted_idx,
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.show()
-    
+
     return optimal_features_count
 
 def score_acc_prec(Y_true, Y_pred, **kwargs):
