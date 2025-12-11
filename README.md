@@ -64,15 +64,39 @@ poetry run uvicorn main:app --reload
 L'API est maintenant accessible. Vous pouvez tester les endpoints via la documentation interactive :
     URL : http://127.0.0.1:8000/docs
 
-**Exemple de requête**
+**📖 Utilisation de l'API**
+
+L'endpoint principal est /predict/. Il attend une requête POST contenant un vecteur de 13 caractéristiques (features) décrivant le client.  
+
+**Format de la requête**
+Le corps de la requête (Body) doit être au format JSON :
+```json
+{
+  "features": [valeur1, valeur2, ..., valeur13]
+}
+```
+
+**À quoi correspondent les 13 valeurs ?**
+
+L'ordre des données est crucial pour la prédiction. Voici la correspondance des index :
+- 0 : [Nom Feature 1] (ex: Statut du compte)
+- 1 : [Nom Feature 2] (ex: Durée du crédit en mois)
+- 2 : [Nom Feature 3] (ex: Historique des crédits)
+- ...
+- 12 : [Nom Feature 13] (ex: Montant du crédit)
+
+**Exemple de test**
 ```bash
 curl -X 'POST' \
-  '[http://127.0.0.1:8000/predict/](http://127.0.0.1:8000/predict/)' \
+  'http://127.0.0.1:8000/predict/' \
+  -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
   "features": [9.0, 1.0, 60.0, 30.0, 0.0, 1.0, 1.0, 73.0, 129.0, 0.0, 0.0, 800.0, 846.0]
 }'
 ```
+
+
 
 
 
