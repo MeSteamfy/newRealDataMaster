@@ -224,11 +224,22 @@ def selection_nombre_optimal_variables(Xtrain, Xtest, Ytrain, Ytest, sorted_idx,
     """Détermine le nombre optimal de variables à conserver (Q5)."""
     print(f"\n🔄 Détermination du nombre optimal de variables (avec {meilleur_algo_name})...")
 
-    # Initialiser le meilleur modèle (MLP ou autre)
     if meilleur_algo_name == 'MLP':
-        best_clf = MLPClassifier(**meilleur_algo_params)
+        params = {'random_state': 1, 'max_iter': 1000}
+        params.update(meilleur_algo_params)
+        best_clf = MLPClassifier(**params)
+
     elif meilleur_algo_name.startswith('Random Forest'):
-        best_clf = RandomForestClassifier(n_jobs=-1, **meilleur_algo_params)
+        params = {'random_state': 1, 'n_estimators': 200, 'n_jobs': -1}
+        params.update(meilleur_algo_params)
+        best_clf = RandomForestClassifier(**params)
+
+    elif meilleur_algo_name.startswith('XGBoost'):
+        params = {'random_state': 1, 'n_estimators': 200, 'n_jobs': -1, 'use_label_encoder': False,
+                  'eval_metric': 'logloss'}
+        params.update(meilleur_algo_params)
+        best_clf = XGBClassifier(**params)
+
     else:
         best_clf = DecisionTreeClassifier(random_state=1)
 
@@ -238,7 +249,6 @@ def selection_nombre_optimal_variables(Xtrain, Xtest, Ytrain, Ytest, sorted_idx,
         X1_f = Xtrain[:, sorted_idx[:f + 1]]
         X2_f = Xtest[:, sorted_idx[:f + 1]]
 
-        # Réinitialiser/recréer le classifieur à chaque itération
         clf_iteration = best_clf.__class__(**best_clf.get_params())
         clf_iteration.fit(X1_f, Ytrain)
 
