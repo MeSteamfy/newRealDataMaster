@@ -32,9 +32,6 @@ poetry --version
 
 ```
 
-```bash
-curl -sSL [https://install.python-poetry.org](https://install.python-poetry.org) | python3 -
-
 ## Clonez le dépôt et accédez au dossier :
 
 git clone git@github.com:MeSteamfy/newRealDataMaster.git
