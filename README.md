@@ -101,7 +101,19 @@ curl -X 'POST' \
   'http://127.0.0.1:8000/predict/' \
   -H 'Content-Type: application/json' \
   -d '{
-  "features": [9.0, 1.0, 60.0, 30.0, 0.0, 1.0, 1.0, 73.0, 129.0, 0.0, 0.0, 800.0, 846.0]
+  "Seniority": 0.0,
+  "Home": 0.0,
+  "Time": 48.0,
+  "Age": 20.0,
+  "Marital": 1.0,
+  "Records": 1.0,
+  "Job": 0.0,
+  "Expenses": 100.0,
+  "Income": 0.0,
+  "Assets": 0.0,
+  "Debt": 5000.0,
+  "Amount": 1500.0,
+  "Price": 1500.0
 }'
 ```
 
@@ -109,10 +121,12 @@ curl -X 'POST' \
 *Revenus plus élevés (200), Actifs importants (5000), Dette nulle.*
 ```bash
 curl -X 'POST' \
-  'http://127.0.0.1:8000/predict/docs' \
+  'http://127.0.0.1:8000/predict/' \
   -H 'Content-Type: application/json' \
   -d '{
-  "features": [15.0, 1.0, 36.0, 45.0, 2.0, 0.0, 3.0, 50.0, 200.0, 5000.0, 0.0, 500.0, 600.0]
+  "Seniority": 15.0, "Home": 1.0, "Time": 36.0, "Age": 45.0, "Marital": 2.0,
+  "Records": 0.0, "Job": 3.0, "Expenses": 50.0, "Income": 200.0,
+  "Assets": 5000.0, "Debt": 0.0, "Amount": 500.0, "Price": 600.0
 }'
 ```
 
