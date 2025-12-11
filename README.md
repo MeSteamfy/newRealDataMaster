@@ -49,10 +49,10 @@ poetry install
 poetry run jupyter notebook
 ```
 
-Ouvrez le fichier **newTPAlgoDataMaster.ipynb**
-
-Dans le menu, cliquez sur **Kernel > Restart & Run All**
-    Cela va entraîner les modèles, sélectionner les meilleures variables et sauvegarder le fichier **credit_scoring_pipeline.pkl**
+Ouvrir et exécuter le notebook :
+    Dans l'interface web qui s'ouvre, cliquez sur le fichier newTPAlgoDataMaster.ipynb
+    Dans le menu du notebook, sélectionnez Kernel > Restart & Run All.
+    Cette étape va sauvegarder le fichier credit_scoring_pipeline.pkl sur votre disque.
 
 ## Lancement de l'API
 
