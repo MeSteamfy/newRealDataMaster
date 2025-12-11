@@ -16,14 +16,37 @@ NB_EXPECTED_FEATURES = 13  # Nombre de colonnes d'entrée du pipeline
 
 app = FastAPI(title="Credit Scoring API")
 
-# --- Modèle de données d'entrée ---
-class FeatureInput(BaseModel):
-    features: List[float]
-    
+class CreditApplication(BaseModel):
+    Seniority: float
+    Home: float
+    Time: float
+    Age: float
+    Marital: float
+    Records: float
+    Job: float
+    Expenses: float
+    Income: float
+    Assets: float
+    Debt: float
+    Amount: float
+    Price: float
+
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
-                "features": [9.0, 1.0, 60.0, 30.0, 0.0, 1.0, 1.0, 73.0, 129.0, 0.0, 0.0, 800.0, 846.0] 
+                "Seniority": 9.0,
+                "Home": 1.0,
+                "Time": 60.0,
+                "Age": 30.0,
+                "Marital": 0.0,
+                "Records": 1.0,
+                "Job": 1.0,
+                "Expenses": 73.0,
+                "Income": 129.0,
+                "Assets": 0.0,
+                "Debt": 0.0,
+                "Amount": 800.0,
+                "Price": 846.0
             }
         }
 
@@ -44,34 +67,39 @@ def load_pipeline():
 
 # --- Endpoint de Prédiction ---
 @app.post("/predict/")
-def predict_status(input_data: FeatureInput):
-    """Renvoie la prédiction de statut (0 ou 1) et les probabilités associées."""
-    
-    if len(input_data.features) != NB_EXPECTED_FEATURES:
-        raise HTTPException(status_code=400, detail=f"Expected {NB_EXPECTED_FEATURES} features, but received {len(input_data.features)}")
-
-    # Convertir l'entrée en array numpy 2D
-    data_array = np.array(input_data.features).reshape(1, -1)
-    
+def predict_status(application: CreditApplication):
+    # 1. On récupère le pipeline stocké dans l'état de l'application
     pipeline = app.state.pipeline
-    
+
+    # 2. On transforme l'objet reçu en une liste ordonnée
+    features_list = [
+        application.Seniority,
+        application.Home,
+        application.Time,
+        application.Age,
+        application.Marital,
+        application.Records,
+        application.Job,
+        application.Expenses,
+        application.Income,
+        application.Assets,
+        application.Debt,
+        application.Amount,
+        application.Price
+    ]
+
+    # 3. Prédiction
     try:
-        prediction = pipeline.predict(data_array)[0]
-        # Vérifier si le modèle supporte predict_proba (important pour certains modèles comme le CART)
-        if hasattr(pipeline.named_steps['final_classifier'], 'predict_proba'):
-            probabilities = pipeline.predict_proba(data_array)[0]
-        else:
-            # Si le modèle ne supporte pas, on renvoie une probabilité par défaut ou une estimation
-            probabilities = [0.5, 0.5] 
-            
+        # Le modèle attend une liste de listes (2D array)
+        prediction = pipeline.predict([features_list])
+        probabilities = pipeline.predict_proba([features_list])
+
+        return {
+            "prediction": int(prediction[0]),
+            "status_message": "Crédit Accordé" if prediction[0] == 1 else "Crédit Refusé",
+            "probability_refuse": float(probabilities[0][0]),
+            "probability_accord": float(probabilities[0][1])
+        }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de la prédiction: {e}")
+        raise HTTPException(status_code=400, detail=f"Erreur de prédiction: {str(e)}")
 
-    result = {
-        "prediction": int(prediction),
-        "status_message": "Crédit Accordé (1)" if prediction == 1.0 else "Crédit Refusé (0)",
-        "probability_refuse": float(probabilities[0]),
-        "probability_accord": float(probabilities[1])
-    }
-
-    return result
