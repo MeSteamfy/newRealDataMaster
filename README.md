@@ -130,8 +130,35 @@ curl -X 'POST' \
 }'
 ```
 
+## Connaitre la note du TP
 
+Pour savoir la note du tp, il faut lancer la commande suivante:
 
+```bash
+poetry run python test_auc.py
+```
 
+Cela va prendre un peu de temps pour lancer un résultat, mais cette commande va nous donner un résultat du type:
 
+```bash
+--- 1. PRÉPARATION DES DONNÉES ---
+Taille de l'échantillon final (lignes, colonnes) : (4375, 9)
+Nombre d'exemples positifs (1) : 3159
+Nombre d'exemples négatifs (0) : 1216
+--------------------------------------------------
+--- 2. EXÉCUTION DES CLASSIFIEURS ---
 
+Modèle: Régression Logistique
+  - Accuracy: 0.7845
+  - AUC (Aire sous la courbe ROC): 0.7820
+
+Modèle: K-Nearest Neighbors (K=5)
+  - Accuracy: 0.7243
+  - AUC (Aire sous la courbe ROC): 0.6784
+--------------------------------------------------
+
+✅ EXÉCUTION TERMINÉE.
+Interprétation : Comparez les valeurs d'AUC. Plus elles sont proches de 1.0, plus la performance est bonne.
+```
+
+Comme dis dans le résultat de la fonction, plus le resultat des tests se rapprochent à 1, plus la note sera haute.
