@@ -1,7 +1,3 @@
-# ====================================================================
-# utils.py - Fonctions et Classes pour l'Atelier d'Apprentissage Supervisé
-# ====================================================================
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -34,10 +30,7 @@ from sklearn.metrics import (
 warnings.filterwarnings('ignore')
 np.set_printoptions(threshold=10000, suppress=True)
 
-# ====================================================================
-# I. CLASSES DE TRANSFORMATION PERSONNALISÉES (POUR PIPELINE)
-# ====================================================================
-
+# Pour le pipeline
 class FeatureAugmenter(BaseEstimator, TransformerMixin):
     """Transformateur pour appliquer l'ACP et concaténer les composantes."""
     
@@ -68,10 +61,7 @@ class FeatureSelectorByIndex(BaseEstimator, TransformerMixin):
     def transform(self, X, y=None):
         return X[:, self.indices]
 
-# ====================================================================
-# II. FONCTIONS D'ÉVALUATION ET DE COMPARAISON (Q2, Q10)
-# ====================================================================
-
+# 2. fonctions d'éval et de comp (pour la queqtion 2 à 10)
 def evaluate_model(model, X_test, y_test, model_name="Modèle", mode='test'):
     """
     Évalue un modèle (Matrice de confusion, ROC, Score final: (Acc + Recall) / 2) (Q2).
@@ -81,7 +71,6 @@ def evaluate_model(model, X_test, y_test, model_name="Modèle", mode='test'):
 
     cm = confusion_matrix(y_test, y_pred)
     accuracy = accuracy_score(y_test, y_pred)
-    # Utilisation du rappel (Recall) comme meilleur critère pour le scoring
     recall = recall_score(y_test, y_pred, average='weighted', zero_division=0) 
     auc_score = roc_auc_score(y_test, y_proba)
     score_final = (accuracy + recall) / 2
@@ -90,7 +79,6 @@ def evaluate_model(model, X_test, y_test, model_name="Modèle", mode='test'):
     print(f"Matrice de confusion:\n{cm}")
     print(f"Accuracy: {accuracy:.4f} | Rappel: {recall:.4f} | Score final (Acc+Recall)/2: {score_final:.4f}")
 
-    # Courbe ROC 
     fpr, tpr, _ = roc_curve(y_test, y_proba)
     plt.figure(figsize=(6, 4))
     plt.plot(fpr, tpr, label=f'AUC = {auc_score:.4f}')
@@ -124,7 +112,7 @@ def run_classifiers_train_test(classifiers, X_train, y_train, X_test, y_test, mo
             meilleur_nom = nom
             meilleur_modele = modele
 
-    print(f"\n🏆 MEILLEUR: {meilleur_nom} (Score final: {meilleur_score:.4f})")
+    print(f"\nMEILLEUR: {meilleur_nom} (Score final: {meilleur_score:.4f})")
     return meilleur_nom, meilleur_modele
 
 def run_classifiers_cv(X_original, Y):
@@ -134,7 +122,6 @@ def run_classifiers_cv(X_original, Y):
     print("QUESTION 10: COMPARAISON ROBUSTE (10-FOLD CROSS-VALIDATION)")
     print("="*80)
     
-    # Prétraitement des configurations de données pour CV
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X_original)
     pca = PCA(n_components=3, random_state=1)
@@ -186,16 +173,13 @@ def run_classifiers_cv(X_original, Y):
                 best_global_ds_name = ds_name
                 
     print("\n" + "="*80)
-    print("🏆 IDENTIFICATION DU MEILLEUR ALGORITHME GLOBAL (POST-CV)")
+    print("IDENTIFICATION DU MEILLEUR ALGORITHME GLOBAL (POST-CV)")
     print("="*80)
     print(f"Meilleur Algorithme Global: {best_global_clf_name} sur {best_global_ds_name} (Score: {best_global_score:.4f})")
     
     return best_global_clf_name, best_global_ds_name
 
-# ====================================================================
-# III. FONCTIONS DE SÉLECTION ET TUNING (Q5, Q6)
-# ====================================================================
-
+# Fonctions pour la séclection et tuning (Q5, Q6)
 def importance_des_variables(Xtrain, Ytrain, nom_cols):
     """Calcule l'importance relative des variables (Q5)."""
     clf = RandomForestClassifier(n_estimators=1000, random_state=1, n_jobs=-1) 
@@ -222,7 +206,7 @@ def importance_des_variables(Xtrain, Ytrain, nom_cols):
 def selection_nombre_optimal_variables(Xtrain, Xtest, Ytrain, Ytest, sorted_idx, meilleur_algo_name,
                                        meilleur_algo_params):
     """Détermine le nombre optimal de variables à conserver (Q5)."""
-    print(f"\n🔄 Détermination du nombre optimal de variables (avec {meilleur_algo_name})...")
+    print(f"\nDétermination du bon nombre de variables (avec {meilleur_algo_name})...")
 
     if meilleur_algo_name == 'MLP':
         params = {'random_state': 1, 'max_iter': 1000}
@@ -285,7 +269,7 @@ scorer_acc_prec = make_scorer(score_acc_prec, greater_is_better=True)
 def recherche_meilleurs_parametres(X_train_selected, Y_train, base_clf, param_grid):
     """Recherche les meilleurs hyperparamètres (Q6, Q10)."""
     
-    print("\n🔄 Recherche des meilleurs hyperparamètres (GridSearchCV)...")
+    print("\nRecherche des meilleurs hyperparamètres (GridSearchCV)...")
 
     kf_grid = KFold(n_splits=5, shuffle=True, random_state=0)
     
@@ -304,7 +288,7 @@ def recherche_meilleurs_parametres(X_train_selected, Y_train, base_clf, param_gr
     
     best_params = grid_search.best_params_
     
-    print(f"\n✅ Recherche terminée en {end_time - start_time:.2f} secondes.")
+    print(f"\nRecherche fini en {end_time - start_time:.2f} secondes.")
     print(f"   Meilleurs paramètres: {best_params}")
     
     return grid_search.best_estimator_, best_params
@@ -312,7 +296,7 @@ def recherche_meilleurs_parametres(X_train_selected, Y_train, base_clf, param_gr
 def creation_pipeline(X_train_data, Y_train_data, best_k_indices, final_clf, pipeline_filename):
     """Crée, entraîne et sauvegarde le pipeline final (Q7, Q10)."""
     
-    print(f"\n🔄 Création et Entraînement du pipeline vers {pipeline_filename}...")
+    print(f"\nCréation et Entraînement du pipeline vers {pipeline_filename}...")
     
     pipeline_steps = [
         ('scaler', StandardScaler()),
@@ -327,14 +311,11 @@ def creation_pipeline(X_train_data, Y_train_data, best_k_indices, final_clf, pip
     with open(pipeline_filename, 'wb') as file:
         pickle.dump(pipeline, file)
         
-    print(f"✅ Pipeline créé, entraîné, et sauvegardé.")
+    print(f"Pipeline créé, entraîné, et sauvegardé.")
     
     return pipeline
 
-# ====================================================================
-# IV. FONCTIONS D'ORCHESTRATION (Q8, Q10)
-# ====================================================================
-
+# Fonctions pour orchestration (question 8 à 10)
 def pipeline_generation_train_test_split(df, X_train, Y_train, X_test, Y_test):
     """Orchestration complète pour la première partie (Q8)."""
     
@@ -342,12 +323,10 @@ def pipeline_generation_train_test_split(df, X_train, Y_train, X_test, Y_test):
     print("ORCHESTRATION DU PIPELINE (Q1 à Q8)")
     print("#"*80)
     
-    # --- 1. Préparation des données (Normalisation & ACP) ---
     print("\n[Étape 1] Préparation des données: Normalisation + ACP...")
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
-    
     pca = PCA(n_components=3, random_state=1)
     pca.fit(X_train_scaled)
     X_train_with_pca = np.concatenate([X_train_scaled, pca.transform(X_train_scaled)], axis=1)
@@ -355,25 +334,21 @@ def pipeline_generation_train_test_split(df, X_train, Y_train, X_test, Y_test):
     
     nom_cols_pca = list(df.columns[:-1]) + ['PC1', 'PC2', 'PC3']
     
-    # --- 2. Importance et Sélection (Q5) ---
     print("[Étape 2] Sélection de variables (RF + MLP)...")
     sorted_idx, _ = importance_des_variables(X_train_with_pca, Y_train, nom_cols_pca)
-    
-    # Paramètres par défaut/simulés pour le MLP de la sélection 
+
     mlp_selection_params = {'hidden_layer_sizes': (40, 20), 'max_iter': 500, 'random_state': 1}
     k_optimal = selection_nombre_optimal_variables(
         X_train_with_pca, X_test_with_pca, Y_train, Y_test, sorted_idx, 'MLP', mlp_selection_params
     )
     best_k_indices = sorted_idx[:k_optimal] 
     
-    # --- 3. Tuning du MLP (Q6) ---
     print("[Étape 3] Tuning du MLP (GridSearchCV)...")
     X_train_selected_for_tuning = X_train_with_pca[:, best_k_indices]
     base_mlp = MLPClassifier(random_state=1, max_iter=1000)
     param_grid_mlp = {'hidden_layer_sizes': [(30, 15), (40, 20), (50, 25)], 'activation': ['tanh', 'relu'], 'alpha': [0.0001, 0.001, 0.01]}
     tuned_mlp, best_mlp_params = recherche_meilleurs_parametres(X_train_selected_for_tuning, Y_train, base_mlp, param_grid_mlp)
 
-    # --- 4. Création et Sauvegarde du Pipeline (Q7/Q8) ---
     print("[Étape 4] Création et Entraînement du pipeline...")
     final_pipeline = creation_pipeline(
         X_train, Y_train, best_k_indices, tuned_mlp, "credit_scoring_pipeline.pkl"
@@ -388,24 +363,20 @@ def pipeline_generation_cv(df, X_data, Y_data, best_cv_clf_name, best_cv_clf_par
     print(f"ORCHESTRATION FINALE DU PIPELINE (Q10: {best_cv_clf_name})")
     print("#"*80)
     
-    # --- 1. Préparation des données pour l'étape d'importance ---
     print("\n[Étape 1] Préparation des données: Normalisation + ACP...")
     temp_scaler = StandardScaler()
     X_scaled = temp_scaler.fit_transform(X_data)
     temp_pca = PCA(n_components=3, random_state=1)
     temp_pca.fit(X_scaled)
     X_train_with_pca = np.concatenate([X_scaled, temp_pca.transform(X_scaled)], axis=1)
-    
-    # --- 2. Importance des variables (pour obtenir l'ordre) ---
+
     print("[Étape 2] Sélection de variables (RF)...")
     nom_cols_pca = list(df.columns[:-1]) + ['PC1', 'PC2', 'PC3']
     clf_rf_importances = RandomForestClassifier(n_estimators=1000, random_state=1, n_jobs=-1)
     clf_rf_importances.fit(X_train_with_pca, Y_data)
     sorted_idx = np.argsort(clf_rf_importances.feature_importances_)[::-1]
-    
     best_k_indices = sorted_idx[:k_optimal] 
     
-    # --- 3. Définir le classifieur final tuné ---
     print(f"[Étape 3] Définition du classifieur final ({best_cv_clf_name})...")
     if best_cv_clf_name.startswith('Random Forest'):
         final_clf = RandomForestClassifier(random_state=1, n_estimators=200, n_jobs=-1, **best_cv_clf_params)
@@ -416,12 +387,11 @@ def pipeline_generation_cv(df, X_data, Y_data, best_cv_clf_name, best_cv_clf_par
     else:
         final_clf = DecisionTreeClassifier(random_state=1)
         
-    # --- 4. Création et Sauvegarde du Pipeline Final ---
+
     final_pipeline = creation_pipeline(
         X_data, Y_data, best_k_indices, final_clf, "final_production_pipeline_cv.pkl"
     )
     
-    # --- 5. Évaluation du pipeline CV final sur le jeu de test ---
     Y_pred_pipe = final_pipeline.predict(X_test)
     Y_proba_pipe = final_pipeline.predict_proba(X_test)[:, 1]
     
@@ -431,30 +401,23 @@ def pipeline_generation_cv(df, X_data, Y_data, best_cv_clf_name, best_cv_clf_par
     
     return final_pipeline
 
-# ====================================================================
-# V. FONCTIONS PARTIE II : DONNÉES HÉTÉROGÈNES
-# ====================================================================
-
+# Fonctions pour les données hétéroghènes
 def traitement_donnees_numeriques(df, col_num):
     """Prépare et nettoie les données numériques (II.1)."""
     print("\n" + "#"*80)
     print("PARTIE II - QUESTION 1: DONNÉES NUMÉRIQUES SEULES")
     print("#"*80)
     
-    # Conversion en numpy array pour l'indexation
     data = df.values 
     X_full = data[:, :-1] 
     Y_full = data[:, -1]
     
-    # Extraire les colonnes numériques, remplacer '?' par NaN, et typer en float
     X_num = np.copy(X_full[:, col_num])
-    # Assurez-vous que les '?' sont remplacés par np.nan
     X_num[X_num == '?'] = np.nan
     X_num = X_num.astype(float)
     
-    # Supprimer les individus contenant des nan (basé sur df temporaire pour utiliser la fonction any)
     df_temp = pd.DataFrame(X_num)
-    mask = df_temp.isnull().any(axis=1) # Masque des lignes contenant des NaN
+    mask = df_temp.isnull().any(axis=1)
     X_cleaned = X_num[~mask]
     Y_cleaned = Y_full[~mask]
     
@@ -474,14 +437,12 @@ def traitement_donnees_heterogenes_imputation(X_full, Y_full, col_num, col_cat):
     print("PARTIE II - QUESTION 2: DONNÉES HÉTÉROGÈNES ET MANQUANTES")
     print("#"*80)
     
-    # --- 1. Préparation et imputation des variables numériques (Mean) ---
     X_num = np.copy(X_full[:, col_num])
     X_num[X_num == '?'] = np.nan
     X_num = X_num.astype(float)
     imp_num = SimpleImputer(missing_values=np.nan, strategy='mean')
     X_num_imputed = imp_num.fit_transform(X_num)
 
-    # --- 2. Préparation et imputation des variables catégorielles (Most Frequent) ---
     X_cat = np.copy(X_full[:, col_cat])
 
     X_cat[X_cat == '?'] = np.nan
@@ -489,11 +450,10 @@ def traitement_donnees_heterogenes_imputation(X_full, Y_full, col_num, col_cat):
     imp_cat = SimpleImputer(missing_values=np.nan, strategy='most_frequent')
     X_cat_imputed = imp_cat.fit_transform(X_cat)
 
-    # --- 3. Encodage One-Hot des variables catégorielles ---
     ohe = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
     X_cat_bin = ohe.fit_transform(X_cat_imputed)
 
-    # --- 4. Construction et Normalisation du jeu de données final ---
+
     X_combined = np.concatenate((X_num_imputed, X_cat_bin), axis=1)
     Y_bin = Y_full.astype(int)
     
