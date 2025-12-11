@@ -467,22 +467,16 @@ def traitement_donnees_heterogenes_imputation(X_full, Y_full, col_num, col_cat):
     X_num = X_num.astype(float)
     imp_num = SimpleImputer(missing_values=np.nan, strategy='mean')
     X_num_imputed = imp_num.fit_transform(X_num)
-    
+
     # --- 2. Préparation et imputation des variables catégorielles (Most Frequent) ---
     X_cat = np.copy(X_full[:, col_cat])
-    
-    # Transformer les modalités en valeurs numériques (Label Encoding)
-    for col_id in range(X_cat.shape[1]):
-        unique_val, val_idx = np.unique(X_cat[:, col_id], return_inverse=True)
-        X_cat[:, col_id] = val_idx
 
-    # Imputer avec la modalité la plus fréquente 
-    # (missing_values=0 est utilisé car 0 est la valeur numérique assignée aux modalités manquantes/originales)
-    imp_cat = SimpleImputer(missing_values=0, strategy='most_frequent') 
+    X_cat[X_cat == '?'] = np.nan
+
+    imp_cat = SimpleImputer(missing_values=np.nan, strategy='most_frequent')
     X_cat_imputed = imp_cat.fit_transform(X_cat)
 
     # --- 3. Encodage One-Hot des variables catégorielles ---
-    X_cat_imputed = X_cat_imputed.astype(int) 
     ohe = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
     X_cat_bin = ohe.fit_transform(X_cat_imputed)
 
