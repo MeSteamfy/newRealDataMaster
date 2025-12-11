@@ -73,7 +73,5 @@ def predict_status(input_data: FeatureInput):
         "probability_refuse": float(probabilities[0]),
         "probability_accord": float(probabilities[1])
     }
-    
 
-    
     return result
