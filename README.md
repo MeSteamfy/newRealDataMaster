@@ -41,7 +41,7 @@ cd newRealDataMaster
 ## Installez l'environnement virtuel et les dépendances :
 
 ```bash
-potery lock
+poetry lock
 poetry install
 ```
 
