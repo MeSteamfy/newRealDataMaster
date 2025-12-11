@@ -98,7 +98,7 @@ Voici la signification de chaque index dans la liste `features` :
 *Revenus faibles, pas d'actifs, gros montant demandé.*
 ```bash
 curl -X 'POST' \
-  '[http://127.0.0.1:8000/predict/](http://127.0.0.1:8000/predict/)' \
+  'http://127.0.0.1:8000/predict/' \
   -H 'Content-Type: application/json' \
   -d '{
   "features": [9.0, 1.0, 60.0, 30.0, 0.0, 1.0, 1.0, 73.0, 129.0, 0.0, 0.0, 800.0, 846.0]
@@ -109,7 +109,7 @@ curl -X 'POST' \
 *Revenus plus élevés (200), Actifs importants (5000), Dette nulle.*
 ```bash
 curl -X 'POST' \
-  '[http://127.0.0.1:8000/predict/](http://127.0.0.1:8000/predict/)' \
+  'http://127.0.0.1:8000/predict/' \
   -H 'Content-Type: application/json' \
   -d '{
   "features": [15.0, 1.0, 36.0, 45.0, 2.0, 0.0, 3.0, 50.0, 200.0, 5000.0, 0.0, 500.0, 600.0]
