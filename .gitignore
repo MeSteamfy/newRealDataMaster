@@ -2,4 +2,6 @@ __pycache__
 .idea
 .venv
 poetry.lock
-.ipynb_checkpoints
+.ipynb_checkpoints/
+credit_scoring_pipeline.pkl
+final_production_pipeline_cv.pkl
