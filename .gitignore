@@ -3,5 +3,4 @@ __pycache__
 .venv
 poetry.lock
 .ipynb_checkpoints/
-credit_scoring_pipeline.pkl
-final_production_pipeline_cv.pkl
+*.pkl
